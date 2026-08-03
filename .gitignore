@@ -1,0 +1,33 @@
+# Environment files containing secrets and local config
+.env
+.env.local
+.env.*.local
+
+# Log files
+*.log
+
+# Local data or backups if someone runs the stack outside Synology
+**/data/
+**/backup/
+**/backups/
+
+# macOS
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.temp
