@@ -178,11 +178,22 @@ The script creates each repo as a mirror with a one-year interval, then triggers
 5. Under **Task Settings**:
    - Run command:
      ```bash
-     cd /volume1/docker/synology-docker/forgejo
-     python3 sync-recent-repos.py >> /var/log/forgejo-sync.log 2>&1
-     ```
+      cd /volume1/docker/synology-docker/forgejo
+      python3 sync-recent-repos.py >> /var/log/forgejo-sync.log 2>&1
+      ```
+
+## Disable mirroring on all repos
+
+If you previously created mirrored repos and want to switch them to regular repos, run:
+
+```bash
+python3 disable-mirrors.py
+```
+
+This finds all repos owned by `FORGEJO_OWNER` and disables the mirror flag on each one. After that, Forgejo will no longer pull changes from GitHub automatically.
 
 ## Update
+
 
 Run the provided update script from the `forgejo` directory:
 
