@@ -63,7 +63,21 @@ Back up the entire `${DOCKER_DATA_PATH}/forgejo/data` directory. The compose fil
 
 ## Mirror GitHub repositories
 
-Fill in the mirroring values in `.env` and list repos in `repos-to-mirror.json`.
+Fill in the mirroring values in `.env`.
+
+### Mirror specific repos
+
+List the repos in `repos-to-mirror.json`:
+
+```json
+[
+  {
+    "github_url": "https://github.com/your-username/your-repo",
+    "forgejo_name": "your-repo",
+    "private": false
+  }
+]
+```
 
 Then run:
 
@@ -71,7 +85,29 @@ Then run:
 python3 mirror-repos.py
 ```
 
-Requirements:
+### Mirror all repos for a user or organization
+
+Set `GITHUB_OWNER` in `.env`:
+
+```bash
+GITHUB_OWNER=your-username
+```
+
+Then run:
+
+```bash
+python3 mirror-repos.py
+```
+
+If the `GITHUB_OWNER` matches the owner of the GitHub token, private repos are included. For other users, only public repos are fetched. Organizations include repos the token can access.
+
+You can also pass the owner on the command line:
+
+```bash
+python3 mirror-repos.py --github-owner your-username
+```
+
+### Requirements
 
 - Python 3
 - `requests` (`pip install requests` if missing)

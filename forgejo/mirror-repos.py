@@ -2,8 +2,10 @@
 """Mirror a list of GitHub repositories to Forgejo.
 
 Reads environment variables from .env and a repository list from repos-to-mirror.json.
+Can also fetch all repos for a GitHub user or organization via the GitHub API.
 """
 
+import argparse
 import json
 import os
 import sys
@@ -35,6 +37,52 @@ def require_env(name):
         print(f"Error: {name} is not set in .env")
         sys.exit(1)
     return value
+
+
+def github_headers(token):
+    return {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+
+def fetch_all_pages(url, headers):
+    results = []
+    while url:
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            print(f"  GitHub API error: {response.status_code} {response.text}")
+            return results
+        results.extend(response.json())
+        url = response.links.get("next", {}).get("url")
+    return results
+
+
+def fetch_github_user(github_token):
+    response = requests.get("https://api.github.com/user", headers=github_headers(github_token))
+    if response.status_code == 200:
+        return response.json().get("login")
+    return None
+
+
+def fetch_github_repos(github_owner, github_token):
+    headers = github_headers(github_token)
+    auth_user = fetch_github_user(github_token)
+
+    if auth_user and auth_user.lower() == github_owner.lower():
+        print(f"Fetching repos for authenticated user {github_owner} (includes private repos)...")
+        url = f"https://api.github.com/user/repos?affiliation=owner&per_page=100"
+        return fetch_all_pages(url, headers)
+
+    print(f"Fetching repos for {github_owner}...")
+    url = f"https://api.github.com/users/{github_owner}/repos?per_page=100"
+    repos = fetch_all_pages(url, headers)
+    if repos:
+        return repos
+
+    print(f"Trying organization endpoint for {github_owner}...")
+    url = f"https://api.github.com/orgs/{github_owner}/repos?per_page=100"
+    return fetch_all_pages(url, headers)
 
 
 def clone_addr(github_url):
@@ -86,7 +134,67 @@ def migrate_repo(base_url, forgejo_owner, repo_name, github_url, github_token, f
     return False, response.text
 
 
+def load_repos_from_file(repos_file):
+    if not repos_file.exists():
+        return []
+
+    with repos_file.open() as f:
+        data = json.load(f)
+
+    if not isinstance(data, list):
+        print(f"Error: {repos_file} should contain a JSON list")
+        sys.exit(1)
+
+    return data
+
+
+def repos_from_github(github_owner, github_token):
+    github_repos = fetch_github_repos(github_owner, github_token)
+    return [
+        {
+            "github_url": repo["clone_url"],
+            "forgejo_name": repo["name"],
+            "private": repo["private"],
+        }
+        for repo in github_repos
+    ]
+
+
+def merge_repos(file_repos, github_repos):
+    seen = set()
+    merged = []
+
+    for repo in file_repos + github_repos:
+        github_url = repo.get("github_url")
+        repo_name = repo.get("forgejo_name") or github_url.rstrip("/").split("/")[-1]
+
+        if repo_name in seen:
+            continue
+
+        seen.add(repo_name)
+        merged.append({
+            "github_url": github_url,
+            "forgejo_name": repo_name,
+            "private": repo.get("private", False),
+        })
+
+    return merged
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Mirror GitHub repositories to Forgejo")
+    parser.add_argument(
+        "--github-owner",
+        help="GitHub user or organization whose repos should be mirrored",
+    )
+    parser.add_argument(
+        "--repos-file",
+        type=Path,
+        default=Path(__file__).with_name("repos-to-mirror.json"),
+        help="JSON file listing repos to mirror",
+    )
+    args = parser.parse_args()
+
     load_env()
 
     if not requests_verify():
@@ -97,17 +205,14 @@ def main():
     forgejo_token = require_env("FORGEJO_TOKEN")
     forgejo_owner = require_env("FORGEJO_OWNER")
     interval = os.environ.get("MIRROR_INTERVAL", "8h")
+    github_owner = args.github_owner or os.environ.get("GITHUB_OWNER")
 
-    repos_file = Path(__file__).with_name("repos-to-mirror.json")
-    if not repos_file.exists():
-        print(f"Error: repos-to-mirror.json not found at {repos_file}")
-        sys.exit(1)
-
-    with repos_file.open() as f:
-        repos = json.load(f)
+    file_repos = load_repos_from_file(args.repos_file)
+    github_repos = repos_from_github(github_owner, github_token) if github_owner else []
+    repos = merge_repos(file_repos, github_repos)
 
     if not repos:
-        print("No repositories listed in repos-to-mirror.json")
+        print("No repositories to mirror. Add entries to repos-to-mirror.json or set GITHUB_OWNER.")
         return
 
     created = []
@@ -116,11 +221,11 @@ def main():
 
     for repo in repos:
         github_url = repo.get("github_url")
-        repo_name = repo.get("forgejo_name") or github_url.rstrip("/").split("/")[-1]
+        repo_name = repo.get("forgejo_name")
         private = repo.get("private", False)
 
-        if not github_url:
-            print("Skipping entry with missing github_url")
+        if not github_url or not repo_name:
+            print("Skipping entry with missing github_url or forgejo_name")
             continue
 
         print(f"Processing {repo_name}...")
