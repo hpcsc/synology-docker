@@ -51,8 +51,10 @@ With SQLite, everything lives in one directory:
 
 ```text
 ${DOCKER_DATA_PATH}/forgejo/data/
-├── forgejo.db      # SQLite database
-├── git/            # repositories
+├── gitea/
+│   ├── gitea.db      # SQLite database
+│   ├── conf/app.ini  # Forgejo configuration
+│   └── repositories/ # Git repositories
 ├── attachments/    # issue attachments
 └── avatars/        # user avatars
 ```

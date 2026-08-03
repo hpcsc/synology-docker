@@ -11,7 +11,7 @@ services:
       - USER_GID=${USER_GID:-100}
       - TZ=${TZ:-UTC}
       - FORGEJO__database__DB_TYPE=sqlite3
-      - FORGEJO__database__PATH=/data/forgejo.db
+      - FORGEJO__database__PATH=/data/gitea/gitea.db
       - FORGEJO__server__DOMAIN=${FORGEJO_DOMAIN}
       - FORGEJO__server__ROOT_URL=${FORGEJO_ROOT_URL}
       - FORGEJO__server__SSH_PORT=2222
