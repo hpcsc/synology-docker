@@ -16,7 +16,7 @@ mkdir -p /volume1/docker/forgejo/data
 cp .env.example .env
 ```
 
-3. Review `USER_UID` and `USER_GID` in `docker-compose.yml`. On Synology, run `id` as the user that owns your `DOCKER_DATA_PATH` directory and update the values if needed.
+3. The default `USER_UID=1026` and `USER_GID=100` match a typical first Synology user. Run `id` on your Synology and update `.env` if your user has different values.
 
 4. Start the stack:
 

@@ -7,8 +7,8 @@ services:
       - "3000:3000"
       - "2222:22"
     environment:
-      - USER_UID=1000
-      - USER_GID=1000
+      - USER_UID=${USER_UID:-1026}
+      - USER_GID=${USER_GID:-100}
       - TZ=${TZ:-UTC}
       - FORGEJO__database__DB_TYPE=sqlite3
       - FORGEJO__database__PATH=/data/forgejo.db
