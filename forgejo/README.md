@@ -28,9 +28,9 @@ docker compose up -d
 
 ## Reverse proxy
 
-For HTTPS, configure Synology's Application Portal / Reverse Proxy:
+For HTTPS, configure Synology's Application Portal / Reverse Proxy. The source should match your `FORGEJO_ROOT_URL`:
 
-- Source: `https://git.example.com` on port 443
+- Source: `https://penguin-nas:4000`
 - Destination: `http://localhost:3000` on port 3000
 
 Enable WebSocket support if you plan to use the web IDE or live features.
@@ -40,7 +40,7 @@ Enable WebSocket support if you plan to use the web IDE or live features.
 Map external port `2222` to container port `22`. Users clone via:
 
 ```bash
-git clone ssh://git@git.example.com:2222/<user>/<repo>.git
+git clone ssh://git@penguin-nas:2222/<user>/<repo>.git
 ```
 
 Port 2222 is used instead of 22 to avoid conflicting with Synology DSM SSH.

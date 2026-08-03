@@ -84,7 +84,7 @@ def main():
     load_env()
 
     github_token = require_env("GITHUB_TOKEN")
-    forgejo_url = require_env("FORGEJO_URL")
+    forgejo_url = require_env("FORGEJO_ROOT_URL")
     forgejo_token = require_env("FORGEJO_TOKEN")
     forgejo_owner = require_env("FORGEJO_OWNER")
     interval = os.environ.get("MIRROR_INTERVAL", "8h")
