@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
+import urllib3
 
 
 def load_env():
@@ -50,9 +51,14 @@ def forgejo_headers(token):
     }
 
 
+def requests_verify():
+    value = os.environ.get("FORGEJO_VERIFY_SSL", "true").lower()
+    return value not in ("false", "0", "no", "off")
+
+
 def repo_exists(base_url, owner, repo, token):
     url = urljoin(base_url, f"/api/v1/repos/{owner}/{repo}")
-    response = requests.get(url, headers=forgejo_headers(token))
+    response = requests.get(url, headers=forgejo_headers(token), verify=requests_verify())
     return response.status_code == 200
 
 
@@ -74,7 +80,7 @@ def migrate_repo(base_url, forgejo_owner, repo_name, github_url, github_token, i
         "releases": True,
     }
 
-    response = requests.post(url, headers=forgejo_headers(forgejo_token), json=payload)
+    response = requests.post(url, headers=forgejo_headers(forgejo_token), json=payload, verify=requests_verify())
     if response.status_code == 201:
         return True, None
     return False, response.text
@@ -82,6 +88,9 @@ def migrate_repo(base_url, forgejo_owner, repo_name, github_url, github_token, i
 
 def main():
     load_env()
+
+    if not requests_verify():
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     github_token = require_env("GITHUB_TOKEN")
     forgejo_url = require_env("FORGEJO_ROOT_URL")

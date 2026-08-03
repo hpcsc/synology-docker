@@ -80,6 +80,8 @@ For private GitHub repos, use a classic personal access token with `repo` scope 
 
 The script skips repos that already exist in Forgejo. It sets each imported repo as a pull mirror with the interval from `MIRROR_INTERVAL`.
 
+If your Forgejo instance uses a self-signed certificate (common with Synology reverse proxy), set `FORGEJO_VERIFY_SSL=false` in `.env`.
+
 ### Auto-mirror new repos on a schedule
 
 The script only creates mirrors. Forgejo handles syncing existing mirrors on its own. If you want new repos added to `repos-to-mirror.json` to be created automatically without running the script manually, schedule it on Synology.
