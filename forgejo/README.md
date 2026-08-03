@@ -138,6 +138,50 @@ The script only creates mirrors. Forgejo handles syncing existing mirrors on its
 
 Because the script skips repos that already exist, it is safe to run daily. It will only create mirrors for newly added entries in `repos-to-mirror.json`.
 
+## Sync only repos with recent commits
+
+If you want to avoid Forgejo’s mirror polling, use `sync-recent-repos.py`. It checks GitHub for commits by you since the last run, then creates or syncs only those repos.
+
+1. List the repos to watch in `frequent-repos.json`:
+
+```json
+[
+  {
+    "github_url": "https://github.com/your-username/your-repo",
+    "forgejo_name": "your-repo",
+    "private": false
+  }
+]
+```
+
+2. Make sure `GITHUB_OWNER` is set in `.env`.
+
+3. Run:
+
+```bash
+python3 sync-recent-repos.py
+```
+
+The script stores each repo’s last sync timestamp in `sync-state.json`. On the first run it looks back `SYNC_LOOKBACK_DAYS` (default 7). After that, it only queries repos that have not been synced since the last check.
+
+The script creates each repo as a mirror with a one-year interval, then triggers a sync only when your commits are detected. This avoids repeated polling of GitHub.
+
+### Schedule the recent-sync script
+
+1. Open **Control Panel → Task Scheduler**.
+2. Click **Create → Scheduled Task → User-defined script**.
+3. Under **General**:
+   - Task name: `forgejo-sync-recent-repos`
+   - User: `root`
+4. Under **Schedule**:
+   - Run daily at a quiet time, e.g. `04:00`.
+5. Under **Task Settings**:
+   - Run command:
+     ```bash
+     cd /volume1/docker/synology-docker/forgejo
+     python3 sync-recent-repos.py >> /var/log/forgejo-sync.log 2>&1
+     ```
+
 ## Update
 
 Run the provided update script from the `forgejo` directory:
