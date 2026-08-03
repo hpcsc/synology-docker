@@ -62,7 +62,7 @@ def repo_exists(base_url, owner, repo, token):
     return response.status_code == 200
 
 
-def migrate_repo(base_url, forgejo_owner, repo_name, github_url, github_token, interval, private):
+def migrate_repo(base_url, forgejo_owner, repo_name, github_url, github_token, forgejo_token, interval, private):
     url = urljoin(base_url, "/api/v1/repos/migrate")
     payload = {
         "clone_addr": clone_addr(github_url),
@@ -136,6 +136,7 @@ def main():
             repo_name,
             github_url,
             github_token,
+            forgejo_token,
             interval,
             private,
         )
