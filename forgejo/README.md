@@ -10,10 +10,11 @@ Self-hosted Git service on Synology.
 mkdir -p /volume1/docker/forgejo/data
 ```
 
-2. Copy and edit the environment file:
+2. Copy and edit the environment files. The container config lives in `.env`; the mirror scripts read `scripts/.env` (only needed if you use them).
 
 ```bash
 cp .env.example .env
+cp scripts/.env.example scripts/.env
 ```
 
 3. The default `USER_UID=1026` and `USER_GID=100` match a typical first Synology user. Run `id` on your Synology and update `.env` if your user has different values.
@@ -63,11 +64,11 @@ Back up the entire `${DOCKER_DATA_PATH}/forgejo/data` directory. The compose fil
 
 ## Mirror GitHub repositories
 
-Fill in the mirroring values in `.env`.
+Fill in the mirroring values in `scripts/.env`.
 
 ### Mirror specific repos
 
-List the repos in `repos-to-mirror.json`:
+List the repos in `scripts/mirror-repos/repos-to-mirror.json`:
 
 ```json
 [
@@ -82,12 +83,12 @@ List the repos in `repos-to-mirror.json`:
 Then run:
 
 ```bash
-python3 mirror-repos.py
+python3 scripts/mirror-repos/mirror-repos.py
 ```
 
 ### Mirror all repos for a user or organization
 
-Set `GITHUB_OWNER` in `.env`:
+Set `GITHUB_OWNER` in `scripts/.env`:
 
 ```bash
 GITHUB_OWNER=your-username
@@ -96,7 +97,7 @@ GITHUB_OWNER=your-username
 Then run:
 
 ```bash
-python3 mirror-repos.py
+python3 scripts/mirror-repos/mirror-repos.py
 ```
 
 If the `GITHUB_OWNER` matches the owner of the GitHub token, private repos are included. For other users, only public repos are fetched. Organizations include repos the token can access.
@@ -104,7 +105,7 @@ If the `GITHUB_OWNER` matches the owner of the GitHub token, private repos are i
 You can also pass the owner on the command line:
 
 ```bash
-python3 mirror-repos.py --github-owner your-username
+python3 scripts/mirror-repos/mirror-repos.py --github-owner your-username
 ```
 
 ### Requirements
@@ -116,11 +117,11 @@ For private GitHub repos, use a classic personal access token with `repo` scope 
 
 The script skips repos that already exist in Forgejo. It sets each imported repo as a pull mirror with the interval from `MIRROR_INTERVAL`.
 
-If your Forgejo instance uses a self-signed certificate (common with Synology reverse proxy), set `FORGEJO_VERIFY_SSL=false` in `.env`.
+If your Forgejo instance uses a self-signed certificate (common with Synology reverse proxy), set `FORGEJO_VERIFY_SSL=false` in `scripts/.env`.
 
 ### Auto-mirror new repos on a schedule
 
-The script only creates mirrors. Forgejo handles syncing existing mirrors on its own. If you want new repos added to `repos-to-mirror.json` to be created automatically without running the script manually, schedule it on Synology.
+The script only creates mirrors. Forgejo handles syncing existing mirrors on its own. If you want new repos added to `scripts/mirror-repos/repos-to-mirror.json` to be created automatically without running the script manually, schedule it on Synology.
 
 1. Open **Control Panel → Task Scheduler**.
 2. Click **Create → Scheduled Task → User-defined script**.
@@ -133,16 +134,16 @@ The script only creates mirrors. Forgejo handles syncing existing mirrors on its
    - Run command:
      ```bash
      cd /volume1/docker/synology-docker/forgejo
-     python3 mirror-repos.py >> /var/log/forgejo-mirror.log 2>&1
+     python3 scripts/mirror-repos/mirror-repos.py >> /var/log/forgejo-mirror.log 2>&1
      ```
 
-Because the script skips repos that already exist, it is safe to run daily. It will only create mirrors for newly added entries in `repos-to-mirror.json`.
+Because the script skips repos that already exist, it is safe to run daily. It will only create mirrors for newly added entries in `scripts/mirror-repos/repos-to-mirror.json`.
 
 ## Sync only repos with recent commits
 
-If you want to avoid Forgejo’s mirror polling, use `sync-recent-repos.py`. It checks GitHub for commits by you since the last run, then creates or syncs only those repos.
+If you want to avoid Forgejo’s mirror polling, use `scripts/sync-recent-repos/sync-recent-repos.py`. It checks GitHub for commits by you since the last run, then creates or syncs only those repos.
 
-1. List the repos to watch in `frequent-repos.json`:
+1. List the repos to watch in `scripts/sync-recent-repos/frequent-repos.json`:
 
 ```json
 [
@@ -154,15 +155,15 @@ If you want to avoid Forgejo’s mirror polling, use `sync-recent-repos.py`. It 
 ]
 ```
 
-2. Make sure `GITHUB_OWNER` is set in `.env`.
+2. Make sure `GITHUB_OWNER` is set in `scripts/.env`.
 
 3. Run:
 
 ```bash
-python3 sync-recent-repos.py
+python3 scripts/sync-recent-repos/sync-recent-repos.py
 ```
 
-The script stores each repo’s last sync timestamp in `sync-state.json`. On the first run it looks back `SYNC_LOOKBACK_DAYS` (default 7). After that, it only queries repos that have not been synced since the last check.
+The script stores each repo’s last sync timestamp in `scripts/sync-recent-repos/sync-state.json`. On the first run it looks back `SYNC_LOOKBACK_DAYS` (default 7). After that, it only queries repos that have not been synced since the last check.
 
 The script creates each repo as a mirror with a one-year interval, then triggers a sync only when your commits are detected. This avoids repeated polling of GitHub.
 
@@ -179,7 +180,7 @@ The script creates each repo as a mirror with a one-year interval, then triggers
    - Run command:
      ```bash
       cd /volume1/docker/synology-docker/forgejo
-      python3 sync-recent-repos.py >> /var/log/forgejo-sync.log 2>&1
+      python3 scripts/sync-recent-repos/sync-recent-repos.py >> /var/log/forgejo-sync.log 2>&1
       ```
 
 ## Disable mirroring on all repos
@@ -187,7 +188,7 @@ The script creates each repo as a mirror with a one-year interval, then triggers
 If you previously created mirrored repos and want to switch them to regular repos, run:
 
 ```bash
-python3 disable-mirrors.py
+python3 scripts/disable-mirrors/disable-mirrors.py
 ```
 
 This finds all repos owned by `FORGEJO_OWNER` and disables the mirror flag on each one. After that, Forgejo will no longer pull changes from GitHub automatically.

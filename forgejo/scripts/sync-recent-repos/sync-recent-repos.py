@@ -18,7 +18,8 @@ import urllib3
 
 
 def load_env():
-    env_path = Path(__file__).with_name(".env")
+    # .env lives at forgejo/scripts, one level up from scripts/<name>/<script>.py.
+    env_path = Path(__file__).resolve().parents[1] / ".env"
     if not env_path.exists():
         print(f"Error: .env file not found at {env_path}")
         sys.exit(1)

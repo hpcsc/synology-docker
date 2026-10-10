@@ -9,7 +9,8 @@ Declarative Docker stacks for Synology NAS, one folder per app.
 ├── README.md
 ├── forgejo/
 │   ├── docker-compose.yml
-│   └── .env.example
+│   ├── .env.example
+│   └── scripts/        # mirroring helpers
 └── ... more apps
 ```
 
@@ -22,12 +23,12 @@ cd /volume1/docker
 git clone https://github.com/<your-user>/synology-docker.git
 ```
 
-2. For each app, copy `.env.example` to `.env` and fill in the values.
+2. For each app, copy `.env.example` to `.env` and fill in the values. Apps with mirror scripts also have a `scripts/.env.example`.
 
 ```bash
 cd synology-docker/forgejo
 cp .env.example .env
-# edit .env with your settings
+cp scripts/.env.example scripts/.env   # only if you use the mirror scripts
 ```
 
 3. Create the host directory on Synology. The path is derived from `DOCKER_DATA_PATH` in `.env`:
