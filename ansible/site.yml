@@ -1,0 +1,81 @@
+---
+# Deploy the Synology Docker stacks.
+#
+# Run with secrets injected by fnox:
+#   fnox exec -- ansible-playbook -i inventory/hosts.yml site.yml
+
+- name: Verify secrets are available
+  hosts: localhost
+  gather_facts: false
+  vars:
+    github_token: "{{ lookup('env', 'SYNOLOGY_DOCKER_GITHUB_TOKEN') }}"
+    forgejo_token: "{{ lookup('env', 'SYNOLOGY_DOCKER_FORGEJO_TOKEN') }}"
+  tasks:
+    - name: Check that fnox supplied the tokens
+      ansible.builtin.assert:
+        that:
+          - github_token | length > 0
+          - forgejo_token | length > 0
+        fail_msg: >-
+          SYNOLOGY_DOCKER_GITHUB_TOKEN and SYNOLOGY_DOCKER_FORGEJO_TOKEN are not set. Run through fnox:
+          `fnox exec -- ansible-playbook -i inventory/hosts.yml site.yml`
+
+- name: Deploy Docker stacks to Synology
+  hosts: nas
+  gather_facts: false
+  become: true
+
+  tasks:
+    # ---- repo ----
+    # Use `git -C` (not the git module) so `origin` resolves in the repo's own
+    # context; `safe.directory` avoids "dubious ownership" when running as root.
+    - name: Clone or update the repo
+      ansible.builtin.raw: |
+        if [ -d "{{ repo_dest }}/.git" ]; then
+          git -C "{{ repo_dest }}" -c "safe.directory={{ repo_dest }}" pull --ff-only
+        else
+          git clone --branch "{{ repo_branch }}" "{{ repo_url }}" "{{ repo_dest }}"
+        fi
+
+    # ---- env files ----
+    - name: Render container .env
+      ansible.builtin.template:
+        src: forgejo.env.j2
+        dest: "{{ repo_dest }}/forgejo/.env"
+        mode: "0600"
+
+    - name: Render mirroring .env
+      ansible.builtin.template:
+        src: forgejo-scripts.env.j2
+        dest: "{{ repo_dest }}/forgejo/scripts/.env"
+        mode: "0600"
+      no_log: true
+
+    # ---- data dir ----
+    - name: Ensure data directory exists
+      ansible.builtin.file:
+        path: "{{ docker_data_path }}/forgejo/data"
+        state: directory
+        mode: "0755"
+
+    # ---- compose ----
+    - name: Start the stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ repo_dest }}/forgejo"
+        docker_cli: "{{ docker_cli }}"
+        state: present
+        pull: missing
+
+    # ---- scheduled tasks ----
+    - name: Create/update DSM scheduled tasks
+      ansible.builtin.script: >-
+        syno_scheduled_task.sh
+        {{ item.id }}
+        '{{ item.name }}'
+        {{ item.hour }}
+        {{ item.minute }}
+        '{{ repo_dest }}/forgejo'
+        '{{ item.script }}'
+      loop: "{{ scheduled_tasks }}"
+      # Reconciled every run; the helper rewrites the .task file and re-syncs.
+      changed_when: false

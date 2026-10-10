@@ -1,0 +1,41 @@
+---
+# ---- deploy source (git clone) ----
+repo_url: https://github.com/hpcsc/synology-docker
+repo_branch: main
+repo_dest: /volume1/docker/synology-docker
+
+# ---- Forgejo container (forgejo/.env) ----
+docker_data_path: /volume1/docker
+tz: UTC
+user_uid: 1026
+user_gid: 100
+forgejo_domain: penguin-nas
+forgejo_root_url: https://penguin-nas:4000
+disable_registration: "true"
+
+# ---- mirroring (forgejo/scripts/.env) ----
+# The mirroring tokens are NOT here. fnox provides them as env vars named
+# SYNOLOGY_DOCKER_GITHUB_TOKEN and SYNOLOGY_DOCKER_FORGEJO_TOKEN (prefixed to
+# avoid colliding with other projects on the host). The .env files still use the
+# unprefixed keys GITHUB_TOKEN / FORGEJO_TOKEN.
+forgejo_owner: hpcsc
+github_owner: hpcsc
+forgejo_verify_ssl: "true"
+mirror_interval: 8h
+sync_lookback_days: 7
+
+# ---- Docker Compose ----
+# The docker CLI on Synology is at /usr/local/bin, which is not on PATH for the
+# sudo/SSH session Ansible uses. Use `docker-compose` (v1) if DSM only has that.
+docker_cli: /usr/local/bin/docker
+
+# ---- DSM scheduled tasks ----
+# One daily task creates pull mirrors and lets Forgejo poll them; mirror-repos.py
+# also picks up newly added repos. sync-recent-repos.py is an alternative, not a
+# second job, so it is not scheduled here.
+scheduled_tasks:
+  - id: 91
+    name: forgejo-mirror-new-repos
+    hour: 4
+    minute: 0
+    script: "python3 scripts/mirror-repos/mirror-repos.py >> /var/log/forgejo-mirror.log 2>&1"

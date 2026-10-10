@@ -1,0 +1,51 @@
+version: '3'
+
+# Orchestrates the Ansible deployment in ansible/. Run from the repo root:
+#   task deploy     # apply
+#   task dry-run    # preview without applying
+
+tasks:
+  default:
+    desc: Show available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  deps:
+    desc: Install Ansible (via mise) and the required collections
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - mise install
+      - ansible-galaxy install -r requirements.yml
+
+  secrets:
+    desc: Store the GitHub and Forgejo tokens in fnox (prompts for each)
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - fnox set SYNOLOGY_DOCKER_GITHUB_TOKEN
+      - fnox set SYNOLOGY_DOCKER_FORGEJO_TOKEN
+
+  secrets-check:
+    desc: Verify fnox can resolve both tokens
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - fnox check --all
+
+  check:
+    desc: Validate playbook syntax (no NAS connection, no secrets)
+    aliases: [syntax]
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - ansible-playbook -i inventory/hosts.yml site.yml --syntax-check
+
+  dry-run:
+    desc: Preview what would change without applying it (needs fnox for tokens)
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - fnox exec -- ansible-playbook -i inventory/hosts.yml site.yml --check --ask-become-pass
+
+  deploy:
+    desc: Deploy the stacks (needs fnox for tokens)
+    dir: "{{.ROOT_DIR}}/ansible"
+    cmds:
+      - fnox exec -- ansible-playbook -i inventory/hosts.yml site.yml --ask-become-pass

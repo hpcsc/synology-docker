@@ -1,0 +1,3 @@
+[secrets]
+SYNOLOGY_DOCKER_GITHUB_TOKEN= { provider = "keychain", value = "SYNOLOGY_DOCKER_GITHUB_TOKEN" }
+SYNOLOGY_DOCKER_FORGEJO_TOKEN= { provider = "keychain", value = "SYNOLOGY_DOCKER_FORGEJO_TOKEN" }

@@ -1,0 +1,4 @@
+[tools]
+# Ansible + ansible-galaxy + ansible-playbook, installed by mise (pipx/uv backend).
+# Pin a specific version (e.g. "11.4.0") once you settle on one.
+ansible = "latest"
