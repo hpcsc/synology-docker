@@ -20,7 +20,8 @@ disable_registration: "true"
 # unprefixed keys GITHUB_TOKEN / FORGEJO_TOKEN.
 forgejo_owner: hpcsc
 github_owner: hpcsc
-forgejo_verify_ssl: "true"
+# Forgejo uses a self-signed cert (Synology reverse proxy), so skip verification.
+forgejo_verify_ssl: "false"
 mirror_interval: 8h
 sync_lookback_days: 7
 
