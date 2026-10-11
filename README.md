@@ -16,6 +16,29 @@ Declarative Docker stacks for Synology NAS, one folder per app.
 
 ## How to deploy
 
+There are two ways to deploy: via [Ansible](ansible/README.md) (recommended) or manually.
+
+<details open>
+<summary>Ansible (recommended)</summary>
+
+Deployment is automated with [Ansible](ansible/README.md). It clones this repo onto the NAS, renders the `.env` files from [fnox](https://fnox.jdx.dev/)-injected secrets, creates the data directory, starts the stacks, and registers the DSM scheduled tasks.
+
+From the repo root:
+
+```bash
+task deps      # install Ansible (mise) + collections
+task secrets   # store the GitHub and Forgejo tokens in fnox
+task deploy    # apply
+task dry-run   # preview with --check
+```
+
+See [`ansible/README.md`](ansible/README.md) for the one-time SSH setup, the secrets flow, and Synology notes.
+
+</details>
+
+<details>
+<summary>Manual deployment</summary>
+
 1. Clone this repo onto your Synology, e.g.:
 
 ```bash
@@ -42,6 +65,8 @@ mkdir -p /volume1/docker/forgejo/data
 ```bash
 docker compose up -d
 ```
+
+</details>
 
 No Portainer is required; these are plain Docker Compose files managed by Synology Container Manager or the Docker CLI.
 
