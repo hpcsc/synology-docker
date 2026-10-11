@@ -33,6 +33,32 @@ task secrets    # set the GitHub and Forgejo tokens in fnox
    `/usr/syno/etc/synoschedule.d/root/<id>.task` and running
    `synoschedtask --sync`.
 
+## Prerequisites: SSH access to the NAS
+
+Ansible connects over SSH as `macmini-ssh` on port `1122`. Do this once:
+
+1. **Enable SSH** — Control Panel → Terminal & SNMP → Terminal → check *Enable
+   SSH service* (port `1122`).
+2. **Admin-group user** — DSM only permits SSH (and `sudo`, which `become`
+   needs) for members of the `administrators` group, so `macmini-ssh` must be in
+   it.
+3. **Key-based auth** from your Mac:
+
+   ```bash
+   ssh-copy-id -p 1122 macmini-ssh@penguin-nas
+   ```
+
+   Or manually: append `~/.ssh/id_ed25519.pub` to `~/.ssh/authorized_keys` on
+   the NAS, then `chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys`.
+4. **Verify**:
+
+   ```bash
+   ssh -p 1122 macmini-ssh@penguin-nas 'sudo -n true'
+   ```
+
+   If `sudo -n true` fails, sudo needs a password — set `ansible_become_password`
+   in the inventory.
+
 ## Setup
 
 1. Install Ansible and the collection (`task deps` does both):
